@@ -28,13 +28,23 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+    const UsersCollections = client.db("Users").collection("User");
     // Send a ping to confirm a successful connection
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await UsersCollections.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "User Already Exist" });
+      }
+      console.log(existingUser);
+      const result = await UsersCollections.insertOne(user);
+      res.send(result);
+    });
     app.post("/jwt", (req, res) => {
       const user = req.body;
       console.log("user", user);
-      const token = jwt.sign(user, process.env.Access_Token, {
-        expiresIn: "1h",
-      });
+      const token = jwt.sign(user, process.env.Access_Token);
       res.send({ token });
     });
     await client.db("admin").command({ ping: 1 });
