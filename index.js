@@ -38,6 +38,10 @@ async function run() {
       const result = await InstructorsCollections.find().toArray();
       res.send(result);
     });
+    app.get("/classes", async (req, res) => {
+      const result = await classesCollections.find().toArray();
+      res.send(result);
+    });
     app.post("/classes", async (req, res) => {
       const data = req.body;
       console.log(data);
