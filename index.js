@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
   res.send("Vedhak Is Running");
 });
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.54td47o.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -23,6 +23,20 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    res.status(401).send({ error: true, message: "Unauthorized Access" });
+  }
+  const token = authorization.split(" ")[1];
+  jwt.verify(token, process.env.Access_Token, function (err, decoded) {
+    if (err) {
+      res.status(403).send({ error: true, message: "Forbidden Access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
 
 async function run() {
   try {
@@ -48,6 +62,30 @@ async function run() {
       const result = await classesCollections.insertOne(data);
       res.send(result);
     });
+    app.get("/users", async (req, res) => {
+      const result = await UsersCollections.find().toArray();
+      res.send(result);
+    });
+    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      if (req.decoded.email !== email) {
+        res.send({ isAdmin: false });
+      }
+      const query = { email: email };
+      const user = await UsersCollections.findOne(query);
+      res.send(user);
+    });
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: `admin`,
+        },
+      };
+      const result = await UsersCollections.updateOne(query, updateDoc);
+      res.send(result);
+    });
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -64,6 +102,12 @@ async function run() {
       console.log("user", user);
       const token = jwt.sign(user, process.env.Access_Token);
       res.send({ token });
+    });
+    app.delete("/classes/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await classesCollections.deleteOne(query);
+      res.send(result);
     });
     await client.db("admin").command({ ping: 1 });
     console.log(
