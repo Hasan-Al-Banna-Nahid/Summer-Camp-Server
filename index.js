@@ -100,6 +100,10 @@ async function run() {
 
       res.send(result);
     });
+    app.get("/instructorsClasses", async (req, res) => {
+      const result = await InstructorsClassCollections.find().toArray();
+      res.send(result);
+    });
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
