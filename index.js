@@ -52,6 +52,9 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const UsersCollections = client.db("Users").collection("User");
+    const InstructorsClassCollections = client
+      .db("instructorsClasses")
+      .collection("instructorsClass");
     const classesCollections = client.db("classes").collection("class");
     const InstructorsCollections = client
       .db("Instructors")
@@ -97,6 +100,28 @@ async function run() {
 
       res.send(result);
     });
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await UsersCollections.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "User Already Exist" });
+      }
+      console.log(existingUser);
+      const result = await UsersCollections.insertOne(user);
+      res.send(result);
+    });
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      console.log("user", user);
+      const token = jwt.sign(user, process.env.Access_Token);
+      res.send({ token });
+    });
+    app.post("/instructorsClasses", async (req, res) => {
+      const data = req.body;
+      const result = await InstructorsClassCollections.insertOne(data);
+      res.send(result);
+    });
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -119,23 +144,7 @@ async function run() {
       const result = await UsersCollections.updateOne(query, updateDoc);
       res.send(result);
     });
-    app.post("/users", async (req, res) => {
-      const user = req.body;
-      const query = { email: user.email };
-      const existingUser = await UsersCollections.findOne(query);
-      if (existingUser) {
-        return res.send({ message: "User Already Exist" });
-      }
-      console.log(existingUser);
-      const result = await UsersCollections.insertOne(user);
-      res.send(result);
-    });
-    app.post("/jwt", (req, res) => {
-      const user = req.body;
-      console.log("user", user);
-      const token = jwt.sign(user, process.env.Access_Token);
-      res.send({ token });
-    });
+
     app.delete("/classes/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
