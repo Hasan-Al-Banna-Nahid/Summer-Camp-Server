@@ -148,6 +148,20 @@ async function run() {
       const result = await UsersCollections.updateOne(query, updateDoc);
       res.send(result);
     });
+    app.patch("/instructorsClasses/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: `approved`,
+        },
+      };
+      const result = await InstructorsClassCollections.updateOne(
+        query,
+        updateDoc
+      );
+      res.send(result);
+    });
 
     app.delete("/classes/:id", async (req, res) => {
       const id = req.params.id;
