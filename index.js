@@ -75,10 +75,7 @@ async function run() {
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
     });
-    // app.get("/classes", async (req, res) => {
-    //   const result = await classesCollections.find().toArray();
-    //   res.send(result);
-    // });
+
     app.get("/classes", async (req, res) => {
       const email = req.query.email;
 
