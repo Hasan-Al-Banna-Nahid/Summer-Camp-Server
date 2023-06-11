@@ -35,7 +35,7 @@ const client = new MongoClient(uri, {
 });
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
-  console.log("bearer", authorization);
+  // console.log("bearer", authorization);
   if (!authorization) {
     res.status(401).send({ error: true, message: "Unauthorized Access" });
   }
@@ -61,11 +61,18 @@ async function run() {
     const InstructorsCollections = client
       .db("Instructors")
       .collection("Instructor");
-    const cartCollection = client.db("Carts").collection("cart");
+    // const cartCollection = client.db("Carts").collection("cart");
     const paymentCollection = client.db("Payments").collection("payment");
     // Send a ping to confirm a successful connection
     app.get("/instructors", async (req, res) => {
       const result = await InstructorsCollections.find().toArray();
+      res.send(result);
+    });
+    app.get("/payments", async (req, res) => {
+      const email = req.query.email;
+
+      const query = { email: email };
+      const result = await paymentCollection.find(query).toArray();
       res.send(result);
     });
     // app.get("/classes", async (req, res) => {
@@ -97,36 +104,6 @@ async function run() {
     //   const result = await classesCollections.insertOne(item);
     //   res.send(result);
     // });
-    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
-      const { price } = req.body;
-      const amount = parseInt(price * 100);
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount,
-        currency: "usd",
-        payment_method_types: ["card"],
-      });
-
-      res.send({
-        clientSecret: paymentIntent.client_secret,
-      });
-    });
-    app.post("/payments", verifyJWT, async (req, res) => {
-      const payment = req.body;
-      const insertResult = await paymentCollection.insertOne(payment);
-
-      const query = {
-        _id: { $in: payment.cartItems.map((id) => new ObjectId(id)) },
-      };
-      const deleteResult = await cartCollection.deleteMany(query);
-
-      res.send({ insertResult, deleteResult });
-    });
-
-    app.post("/classes", async (req, res) => {
-      const data = req.body;
-      const result = await classesCollections.insertOne(data);
-      res.send(result);
-    });
     app.get("/users", async (req, res) => {
       const result = await UsersCollections.find().toArray();
       res.send(result);
@@ -157,6 +134,37 @@ async function run() {
       const result = await InstructorsClassCollections.find().toArray();
       res.send(result);
     });
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment);
+
+      const query = {
+        _id: { $in: payment.cartItems.map((id) => new ObjectId(id)) },
+      };
+      const deleteResult = await classesCollections.deleteMany(query);
+
+      res.send({ insertResult, deleteResult });
+    });
+
+    app.post("/classes", async (req, res) => {
+      const data = req.body;
+      const result = await classesCollections.insertOne(data);
+      res.send(result);
+    });
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -164,7 +172,7 @@ async function run() {
       if (existingUser) {
         return res.send({ message: "User Already Exist" });
       }
-      console.log(existingUser);
+      // console.log(existingUser);
       const result = await UsersCollections.insertOne(user);
       res.send(result);
     });
